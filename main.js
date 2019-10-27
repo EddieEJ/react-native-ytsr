@@ -1,8 +1,8 @@
 const URL = require('url');
-const QS = require('query-string');
-import UTIL from './util'
+const UTIL = require('./util.js');
+import QS from "query-string";
 
-const search = (searchString, options, callback) => { // eslint-disable-line consistent-return
+const main = module.exports = (searchString, options, callback) => { // eslint-disable-line consistent-return
   // Check wether options wether no options were provided
   if (typeof options === 'function') {
     callback = options;
@@ -67,7 +67,7 @@ const search = (searchString, options, callback) => { // eslint-disable-line con
       (!isNaN(options.limit) && options.limit < 1) ||
       !nextpageRef) {
       return callback(null, {
-        query: searchString || QS.unescape(URL.parse(currentRef, true).query.search_query),
+        query: searchString || URL.parse(currentRef, true).query.search_query,
         items,
         nextpageRef,
         results,
@@ -92,7 +92,7 @@ const search = (searchString, options, callback) => { // eslint-disable-line con
   });
 };
 
-const getFilters = (searchString, callback) => { // eslint-disable-line consistent-return
+const getFilters = main.getFilters = (searchString, callback) => { // eslint-disable-line consistent-return
   // Return a promise when no callback is provided
   if (!callback) {
     return new Promise((resolve, reject) => {
@@ -113,6 +113,7 @@ const getFilters = (searchString, callback) => { // eslint-disable-line consiste
     if (err) return callback(err);
     let content;
     try {
+
       const parsed = JSON.parse(body);
       content = parsed[parsed.length - 1].body.content;
       callback(null, UTIL.parseFilters(content)); // eslint-disable-line callback-return
