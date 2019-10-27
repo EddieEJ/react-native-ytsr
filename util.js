@@ -1,21 +1,22 @@
 const ENTITIES = require('html-entities').AllHtmlEntities;
 const URL = require('url');
-const QUERYSTRING = require('query-string');
+
+import QUERYSTRING from "query-string"
 const BASE_URL = 'https://www.youtube.com/results?';
 
 // Builds the search query url
-const buildLink = query => BASE_URL + QUERYSTRING
-  .encode({
+exports.buildLink = query => BASE_URL + QUERYSTRING
+  .stringify({
     search_query: query,
     spf: 'navigate',
     gl: 'US',
     hl: 'en',
   });
 
-const buildFromNextpage = nextpageRef => {
+exports.buildFromNextpage = nextpageRef => {
   let parsed = URL.parse(nextpageRef, true);
-  let overwrites = QUERYSTRING.decode(parsed.search.substr(1));
-  return BASE_URL + QUERYSTRING.encode(Object.assign({}, overwrites, {
+  let overwrites = QUERYSTRING.parse(parsed.search.substr(1));
+  return BASE_URL + QUERYSTRING.stringify(Object.assign({}, overwrites, {
     spf: 'navigate',
     gl: 'US',
     hl: 'en',
@@ -23,24 +24,24 @@ const buildFromNextpage = nextpageRef => {
 };
 
 // Start of parsing an item
-const parseItem = (string, respString, searchString) => {
-  const titles = this.between(string, '<div class="', '"');
-  const type = this.between(titles, 'yt-lockup yt-lockup-tile yt-lockup-', ' ');
+exports.parseItem = (string, respString, searchString) => {
+  const titles = exports.between(string, '<div class="', '"');
+  const type = exports.between(titles, 'yt-lockup yt-lockup-tile yt-lockup-', ' ');
   if (type === 'playlist') {
-    if (string.includes('yt-pl-icon-mix')) return this.parseMix(string);
-    return this.parsePlaylist(string);
+    if (string.includes('yt-pl-icon-mix')) return exports.parseMix(string);
+    return exports.parsePlaylist(string);
   } else if (type === 'channel') {
-    return this.parseChannel(string);
+    return exports.parseChannel(string);
   } else if (type === 'video') {
-    return this.parseVideo(string);
+    return exports.parseVideo(string);
   } else if (type === 'movie-vertical-poster') {
-    return this.parseMovie(string);
+    return exports.parseMovie(string);
   } else if (titles === 'search-refinements') {
-    return this.parseRelatedSearches(string);
+    return exports.parseRelatedSearches(string);
   } else if (titles.includes('shelf') && string.includes('<div class="compact-shelf')) {
-    return this.parseShelfCompact(string);
+    return exports.parseShelfCompact(string);
   } else if (titles.includes('shelf') && string.includes('<div class="vertical-shelf">')) {
-    return this.parseShelfVertical(string);
+    return exports.parseShelfVertical(string);
   } else if (string.includes('<div class="display-message">No more results</div>')) {
     return null;
   } else {
@@ -48,59 +49,59 @@ const parseItem = (string, respString, searchString) => {
   }
 };
 
-const parseMix = string => {
-  const thumbnailRaw = this.between(string, 'data-thumb="', '"');
-  const thumbnail = thumbnailRaw ? thumbnailRaw : this.between(string, 'src="', '"');
-  const plistID = this.removeHtml(this.between(string, 'data-list-id="', '"'));
-  const videoID = this.removeHtml(this.between(string, 'data-video-ids="', '"'));
+exports.parseMix = string => {
+  const thumbnailRaw = exports.between(string, 'data-thumb="', '"');
+  const thumbnail = thumbnailRaw ? thumbnailRaw : exports.between(string, 'src="', '"');
+  const plistID = exports.removeHtml(exports.between(string, 'data-list-id="', '"'));
+  const videoID = exports.removeHtml(exports.between(string, 'data-video-ids="', '"'));
   return {
     type: 'mix',
-    title: this.removeHtml(this.between(this.between(string, '<h3 class="yt-lockup-title ">', '</a>'), '>')),
+    title: exports.removeHtml(exports.between(exports.between(string, '<h3 class="yt-lockup-title ">', '</a>'), '>')),
     firstItem: `https://www.youtube.com/watch?v=${videoID}&list=${plistID}`,
-    thumbnail: URL.resolve(BASE_URL, this.removeHtml(thumbnail)),
-    length: this.removeHtml(this.between(string, '<span class="formatted-video-count-label">', '</span>')),
+    thumbnail: URL.resolve(BASE_URL, exports.removeHtml(thumbnail)),
+    length: exports.removeHtml(exports.between(string, '<span class="formatted-video-count-label">', '</span>')),
   };
 };
 
 // Parse an item of type playlist
-const parsePlaylist = string => {
-  const ownerBox = this.between(string, '<div class="yt-lockup-byline ">', '</div>');
-  const thumbnailRaw = this.between(string, 'data-thumb="', '"');
-  const thumbnail = thumbnailRaw ? thumbnailRaw : this.between(string, 'src="', '"');
-  const cleanID = this.removeHtml(this.between(string, 'data-list-id="', '"'));
+exports.parsePlaylist = string => {
+  const ownerBox = exports.between(string, '<div class="yt-lockup-byline ">', '</div>');
+  const thumbnailRaw = exports.between(string, 'data-thumb="', '"');
+  const thumbnail = thumbnailRaw ? thumbnailRaw : exports.between(string, 'src="', '"');
+  const cleanID = exports.removeHtml(exports.between(string, 'data-list-id="', '"'));
   return {
     type: 'playlist',
-    title: this.removeHtml(this.between(this.between(string, '<h3 class="yt-lockup-title ">', '</a>'), '>')),
+    title: exports.removeHtml(exports.between(exports.between(string, '<h3 class="yt-lockup-title ">', '</a>'), '>')),
     link: `https://www.youtube.com/playlist?list=${cleanID}`,
-    thumbnail: URL.resolve(BASE_URL, this.removeHtml(thumbnail)),
+    thumbnail: URL.resolve(BASE_URL, exports.removeHtml(thumbnail)),
 
     author: {
-      name: this.removeHtml(this.between(ownerBox, '>', '</a>')),
-      ref: URL.resolve(BASE_URL, this.removeHtml(this.between(ownerBox, '<a href="', '"'))),
+      name: exports.removeHtml(exports.between(ownerBox, '>', '</a>')),
+      ref: URL.resolve(BASE_URL, exports.removeHtml(exports.between(ownerBox, '<a href="', '"'))),
       verified: string.includes('title="Verified"'),
     },
 
-    length: this.removeHtml(this.between(string, '<span class="formatted-video-count-label">', '</span>')),
+    length: exports.removeHtml(exports.between(string, '<span class="formatted-video-count-label">', '</span>')),
   };
 };
 
 // Parse an item of type channel
-const parseChannel = string => {
-  const avatarRaw = this.between(string, 'data-thumb="', '"');
-  const avatar = avatarRaw ? avatarRaw : this.between(string, 'src="', '"');
-  const rawDesc = this.between(this.between(string, '<div class="yt-lockup-description', '</div>'), '>');
-  const rawFollows = this.between(this.between(string, 'yt-subscriber-count"', '</span>'), '>');
+exports.parseChannel = string => {
+  const avatarRaw = exports.between(string, 'data-thumb="', '"');
+  const avatar = avatarRaw ? avatarRaw : exports.between(string, 'src="', '"');
+  const rawDesc = exports.between(exports.between(string, '<div class="yt-lockup-description', '</div>'), '>');
+  const rawFollows = exports.between(exports.between(string, 'yt-subscriber-count"', '</span>'), '>');
   return {
     type: 'channel',
-    name: this.removeHtml(this.between(this.between(string, '<a href="', '</a>'), '>')),
-    channel_id: this.between(string, 'data-channel-external-id="', '"'),
-    link: URL.resolve(BASE_URL, this.removeHtml(this.between(string, 'href="', '"'))),
-    avatar: URL.resolve(BASE_URL, this.removeHtml(avatar)),
+    name: exports.removeHtml(exports.between(exports.between(string, '<a href="', '</a>'), '>')),
+    channel_id: exports.between(string, 'data-channel-external-id="', '"'),
+    link: URL.resolve(BASE_URL, exports.removeHtml(exports.between(string, 'href="', '"'))),
+    avatar: URL.resolve(BASE_URL, exports.removeHtml(avatar)),
     verified: string.includes('title="Verified"') || string.includes('yt-channel-title-autogenerated'),
 
     followers: Number(rawFollows.replace(/\.|,/g, '')),
-    description_short: this.removeHtml(rawDesc) || null,
-    videos: Number(this.between(string, '<ul class="yt-lockup-meta-info"><li>', '</li>')
+    description_short: exports.removeHtml(rawDesc) || null,
+    videos: Number(exports.between(string, '<ul class="yt-lockup-meta-info"><li>', '</li>')
       .split(' ')
       .splice(0, 1)[0]
       .replace(/\.|,/g, '')
@@ -109,103 +110,103 @@ const parseChannel = string => {
 };
 
 // Parse an item of type video
-const parseVideo = string => {
-  const ownerBox = this.between(string, '<div class="yt-lockup-byline ">', '</div>');
-  const metaInfo = this.between(string, '<div class="yt-lockup-meta ">', '</ul>')
+exports.parseVideo = string => {
+  const ownerBox = exports.between(string, '<div class="yt-lockup-byline ">', '</div>');
+  const metaInfo = exports.between(string, '<div class="yt-lockup-meta ">', '</ul>')
     .replace(/<\/li>/g, '')
     .split('<li>')
     .splice(1);
-  const thumbnailRaw = this.between(string, 'data-thumb="', '"');
-  const thumbnail = thumbnailRaw ? thumbnailRaw : this.between(string, 'src="', '"');
-  const rawDesc = this.between(this.between(string, '<div class="yt-lockup-description', '</div>'), '>');
+  const thumbnailRaw = exports.between(string, 'data-thumb="', '"');
+  const thumbnail = thumbnailRaw ? thumbnailRaw : exports.between(string, 'src="', '"');
+  const rawDesc = exports.between(exports.between(string, '<div class="yt-lockup-description', '</div>'), '>');
   return {
     type: 'video',
-    title: this.removeHtml(this.between(this.between(string, '<a href="', '</a>'), '>')),
-    link: URL.resolve(BASE_URL, this.removeHtml(this.between(string, 'href="', '"'))),
-    thumbnail: URL.resolve(BASE_URL, this.removeHtml(thumbnail)),
+    title: exports.removeHtml(exports.between(exports.between(string, '<a href="', '</a>'), '>')),
+    link: URL.resolve(BASE_URL, exports.removeHtml(exports.between(string, 'href="', '"'))),
+    thumbnail: URL.resolve(BASE_URL, exports.removeHtml(thumbnail)),
 
     author: {
-      name: this.removeHtml(this.between(ownerBox, '>', '</a>')),
-      ref: URL.resolve(BASE_URL, this.removeHtml(this.between(ownerBox, '<a href="', '"'))),
+      name: exports.removeHtml(exports.between(ownerBox, '>', '</a>')),
+      ref: URL.resolve(BASE_URL, exports.removeHtml(exports.between(ownerBox, '<a href="', '"'))),
       verified: ownerBox.includes('title="Verified"'),
     },
 
-    description: this.removeHtml(rawDesc) || null,
+    description: exports.removeHtml(rawDesc) || null,
     views: metaInfo[1] ? Number(metaInfo[1].split(' ')[0].replace(/\.|,/g, '')) : null,
-    duration: this.between(string, '<span class="video-time" aria-hidden="true">', '</span>'),
+    duration: exports.between(string, '<span class="video-time" aria-hidden="true">', '</span>'),
     uploaded_at: metaInfo[0] || null,
   };
 };
 
 // Parse am item of type movie
-const parseMovie = string => {
+exports.parseMovie = string => {
   const haystack = string.substr(string.lastIndexOf('<div class="yt-lockup-meta"><ul>') + 32);
   const filmMeta = haystack.substr(0, haystack.indexOf('</ul></div>'));
   const authorInfo = `${string.substr(string.lastIndexOf('<a'), string.lastIndexOf('</a>'))}</a>`;
-  const rawDesc = this.between(string, 'yt-lockup-description', '</div>').replace(/[^>]+>/, '');
-  const rawMeta = this.between(string, '<div class="yt-lockup-meta"><ul><li>', '</li></ul>');
+  const rawDesc = exports.between(string, 'yt-lockup-description', '</div>').replace(/[^>]+>/, '');
+  const rawMeta = exports.between(string, '<div class="yt-lockup-meta"><ul><li>', '</li></ul>');
   return {
     type: 'movie',
-    title: this.removeHtml(this.between(string, 'dir="ltr">', '</a>')),
-    link: URL.resolve(BASE_URL, this.removeHtml(this.between(string, 'href="', '"'))),
-    thumbnail: URL.resolve(BASE_URL, this.removeHtml(this.between(string, 'src="', '"'))),
+    title: exports.removeHtml(exports.between(string, 'dir="ltr">', '</a>')),
+    link: URL.resolve(BASE_URL, exports.removeHtml(exports.between(string, 'href="', '"'))),
+    thumbnail: URL.resolve(BASE_URL, exports.removeHtml(exports.between(string, 'src="', '"'))),
 
     author: {
-      name: this.removeHtml(this.between(authorInfo, '>', '<')),
-      ref: URL.resolve(BASE_URL, this.removeHtml(this.between(authorInfo, '<a href="', '"'))),
+      name: exports.removeHtml(exports.between(authorInfo, '>', '<')),
+      ref: URL.resolve(BASE_URL, exports.removeHtml(exports.between(authorInfo, '<a href="', '"'))),
       verified: string.includes('title="Verified"'),
     },
 
-    description: this.removeHtml(rawDesc) || null,
-    meta: this.removeHtml(rawMeta).split(' · '),
-    actors: filmMeta.split('<li>')[1].replace(/<[^>]+>|^[^:]+: /g, '').split(', ').map(a => this.removeHtml(a)),
-    director: this.removeHtml(filmMeta.split('<li>')[2].replace(/<[^>]+>|^[^:]+: /g, '')),
-    duration: this.between(string, '<span class="video-time" aria-hidden="true">', '</span>'),
+    description: exports.removeHtml(rawDesc) || null,
+    meta: exports.removeHtml(rawMeta).split(' · '),
+    actors: filmMeta.split('<li>')[1].replace(/<[^>]+>|^[^:]+: /g, '').split(', ').map(a => exports.removeHtml(a)),
+    director: exports.removeHtml(filmMeta.split('<li>')[2].replace(/<[^>]+>|^[^:]+: /g, '')),
+    duration: exports.between(string, '<span class="video-time" aria-hidden="true">', '</span>'),
   };
 };
 
 // Parse an item of type related searches
-const parseRelatedSearches = string => {
+exports.parseRelatedSearches = string => {
   const related = string.split('search-refinement').splice(2);
   return {
     type: 'search-refinements',
     entrys: related.map(item => ({
-      link: URL.resolve(BASE_URL, this.removeHtml(this.between(item, 'href="', '"'))),
-      q: QUERYSTRING.parse(this.removeHtml(this.between(item, '/results?', '"'))).search_query || null,
+      link: URL.resolve(BASE_URL, exports.removeHtml(exports.between(item, 'href="', '"'))),
+      q: QUERYSTRING.parse(exports.removeHtml(exports.between(item, '/results?', '"'))).search_query || null,
     })),
   };
 };
 
 // Horizontal shelf of youtube movie proposals
-const parseShelfCompact = string => {
+exports.parseShelfCompact = string => {
   const itemsRaw = string.split('<li class="yt-uix-shelfslider-item').splice(1);
   const items = itemsRaw.map(item => ({
-    type: `${this.between(item, ' ', '-')}-short`,
-    name: this.removeHtml(this.between(this.between(item, '><a href="', '</a>'), '>', '')),
-    ref: URL.resolve(BASE_URL, this.removeHtml(this.between(item, 'href="', '"'))),
-    thumbnail: URL.resolve(BASE_URL, this.removeHtml(this.between(item, 'src="', '"'))),
-    duration: this.between(item, '"video-time"', '<').replace(/^[^>]+>/, ''),
-    price: this.between(item, '<span class="button-label">', '</span>').replace(/^[^ ]+ /, '') || null,
+    type: `${exports.between(item, ' ', '-')}-short`,
+    name: exports.removeHtml(exports.between(exports.between(item, '><a href="', '</a>'), '>', '')),
+    ref: URL.resolve(BASE_URL, exports.removeHtml(exports.between(item, 'href="', '"'))),
+    thumbnail: URL.resolve(BASE_URL, exports.removeHtml(exports.between(item, 'src="', '"'))),
+    duration: exports.between(item, '"video-time"', '<').replace(/^[^>]+>/, ''),
+    price: exports.between(item, '<span class="button-label">', '</span>').replace(/^[^ ]+ /, '') || null,
   }));
   return {
     type: 'shelf-compact',
-    title: this.removeHtml(this.between(string, '<span class="branded-page-module-title-text">', '</span>')),
+    title: exports.removeHtml(exports.between(string, '<span class="branded-page-module-title-text">', '</span>')),
     items,
   };
 };
 
 // Vertical shelf of youtube video proposals
-const parseShelfVertical = string => {
+exports.parseShelfVertical = string => {
   const itemsRaw = string.split('<a aria-hidden="').splice(1);
   return {
     type: 'shelf-vertical',
-    title: this.removeHtml(this.between(string, '<span class="branded-page-module-title-text">', '</span>')),
-    items: itemsRaw.map(item => this.parseVideo(item)),
+    title: exports.removeHtml(exports.between(string, '<span class="branded-page-module-title-text">', '</span>')),
+    items: itemsRaw.map(item => exports.parseVideo(item)),
   };
 };
 
 // Taken from https://github.com/fent/node-ytdl-core/
-const between = this.between = (haystack, left, right) => {
+const between = exports.between = (haystack, left, right) => {
   let pos;
   pos = haystack.indexOf(left);
   if (pos === -1) { return ''; }
@@ -218,23 +219,30 @@ const between = this.between = (haystack, left, right) => {
 };
 
 // Cleans up html text
-const removeHtml = this.removeHtml = string => new ENTITIES().decode(
+const removeHtml = exports.removeHtml = string => new ENTITIES().decode(
   string.replace(/\n/g, ' ')
     .replace(/\s*<\s*br\s*\/?\s*>\s*/gi, '\n')
     .replace(/<\s*\/\s*p\s*>\s*<\s*p[^>]*>/gi, '\n')
     .replace(/<.*?>/gi, '')
 ).trim();
 
-const getPage = (ref, cb) => {
-    fetch(ref)
-    .then((response) => response.text())
-    .then((resp) => {
-        cb(null, resp);
-    })
-    .catch((err) => "Error:", cb)
+exports.getPage = (ref, cb) => {
+  fetch(ref).then(res => res.text()).then((res) => {
+    cb(null, res);
+  }).catch((err) => console.log(err))
+  // const request = HTTPS.get(ref, resp => { // eslint-disable-line consistent-return
+
+  //   if (resp.statusCode !== 200) return cb(new Error(`Status Code ${resp.statusCode}`));
+  //   const respBuffer = [];
+  //   resp.on('data', d => respBuffer.push(d));
+  //   resp.on('end', () => {
+  //     cb(null, Buffer.concat(respBuffer).toString());
+  //   });
+  // });
+  // request.on('error', cb);
 };
 
-const parseFilters = body => {
+exports.parseFilters = body => {
   const filterContainer = between(body, '<div id="filter-dropdown"', '<ol id="item-section');
   const coloms = filterContainer.split('<h4 class="filter-col-title">').splice(1);
   const results = new Map();
